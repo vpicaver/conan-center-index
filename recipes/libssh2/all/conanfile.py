@@ -63,8 +63,8 @@ class Libssh2Conan(ConanFile):
             self.requires("mbedtls/2.25.0")
 
     def source(self):
-        tools.get(**self.conan_data["sources"][self.version],
-                  destination=self._source_subfolder, strip_root=True)
+        git = tools.Git(folder="source_subfolder")
+        git.clone("https://github.com/libssh2/libssh2.git", "master")
 
     def _patch_sources(self):
         for patch in self.conan_data.get("patches", {}).get(self.version, []):
