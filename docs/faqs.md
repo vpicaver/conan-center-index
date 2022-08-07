@@ -21,16 +21,19 @@ This section gathers the most common questions from the community related to pac
   * [Can I remove an option from a recipe?](#can-i-remove-an-option-from-a-recipe)
   * [Can I split a project into an installer and library package?](#can-i-split-a-project-into-an-installer-and-library-package)
   * [What license should I use for Public Domain?](#what-license-should-i-use-for-public-domain)
+  * [What license should I use for a custom project specific license?](#what-license-should-i-use-for-a-custom-project-specific-license)
   * [Why is a `tools.check_min_cppstd` call not enough?](#why-is-a-toolscheck_min_cppstd-call-not-enough)
   * [What is the policy for adding older versions of a package?](#what-is-the-policy-for-adding-older-versions-of-a-package)
   * [What is the policy for removing older versions of a package?](#what-is-the-policy-for-removing-older-versions-of-a-package)
   * [Can I install packages from the system package manager?](#can-i-install-packages-from-the-system-package-manager)
   * [Why ConanCenter does not build and execute tests in recipes](#why-conancenter-does-not-build-and-execute-tests-in-recipes)
+  * [Why not add an option to build unit tests](#why-not-add-an-option-to-build-unit-tests)
   * [What is the policy for supported python versions?](#what-is-the-policy-for-supported-python-versions)
   * [How to package libraries that depend on proprietary closed-source libraries?](#how-to-package-libraries-that-depend-on-proprietary-closed-source-libraries)
   * [How to protect my project from breaking changes in recipes?](#how-to-protect-my-project-from-breaking-changes-in-recipes)
   * [Why are version ranges not allowed?](#why-are-version-ranges-not-allowed)
-  * [How to consume a graph of shared libraries?](#how-to-consume-a-graph-of-shared-libraries)<!-- endToc -->
+  * [How to consume a graph of shared libraries?](#how-to-consume-a-graph-of-shared-libraries)
+  * [How to watch only specific recipes?](#how-to-watch-only-specific-recipes)<!-- endToc -->
 
 ## What is the policy on recipe name collisions?
 
@@ -170,6 +173,11 @@ No. Some projects provide more than a simple library, but also applications. For
 
 [The Public Domain](https://fairuse.stanford.edu/overview/public-domain/welcome/) is not a license by itselt. Thus, we have [equivalent licenses](https://en.wikipedia.org/wiki/Public-domain-equivalent_license) to be used instead. By default, if a project uses Public Domain and there is no offcial license listed, you should use [Unlicense](https://spdx.org/licenses/Unlicense).
 
+## What license should I use for a custom project specific license?
+
+When a non standard open-source license is used, we have decided to use `LicenseRef-` as a prefix, followed by the name of the file which contains a custom license.
+See [the reviewing guidlines](reviewing.md#license-attribute) for more details.
+
 ## Why is a `tools.check_min_cppstd` call not enough?
 
 Very often C++ projects require a minimum standard version, such as 14 or 17, in order to compile. Conan offers tools which enable checking the relevant setting is enabled and above this support for a certain version is present. Otherwise, it uses the compiler's default.
@@ -226,17 +234,23 @@ There are different motivations
 - time and resources: adding the build time required by the test suite plus execution time can increase our building times significantly across the 100+ configurations.
 - ConanCenter is a service that builds binaries for the community for existing library versions, this is not an integration system to test the libraries.
 
+## Why not add an option to build unit tests
+
+- Adding a testing option will change the package ID, but will not provide different packaged binaries
+- Use the configuration [skip_test](packaging_policy.md#options) to define the testing behavior.
+
+
 ## What is the policy for supported python versions?
 
 `Python 2.7` and earlier is not supported by the ConanCenter, as it's already [EOL](https://www.python.org/doc/sunset-python-2/).
 
-`Python 3.5` and earlier is also not supported by the ConanCenter, as it's already [EOL](https://www.python.org/dev/peps/pep-0478/).
+`Python 3.6` and earlier is also not supported by the ConanCenter, as it's already [EOL](https://peps.python.org/pep-0494/#lifespan).
 
-Versions `Python 3.6+` onwards are currently supported by the infrastructure and the recipes.
+Versions `Python 3.7+` onwards are currently supported by the infrastructure and the recipes.
 
-Our [docker images](https://github.com/conan-io/conan-docker-tools) use `Python 3.7.5+` ATM.
+Our [docker images](https://github.com/conan-io/conan-docker-tools) use `Python 3.7.13+` ATM.
 
-Windows agents currently use `Python 3.6.7+`. macOS agents use version `Python 3.7.3+`.
+Windows agents currently use `Python 3.7.9+`. macOS agents use version `Python 3.7.12+`.
 
 The version run by our agents and docker images is a subject to change, as security updates to the Python are released, or they enter EOL.
 
@@ -311,7 +325,7 @@ intel-mkl/2021@mycompany/stable
 ## How to protect my project from breaking changes in recipes?
 
 This repository and the CI building recipes is continuosly pushing to new Conan versions,
-sometimes adopting new features as soon as they are released 
+sometimes adopting new features as soon as they are released
 ([Conan client changelog](https://docs.conan.io/en/latest/changelog.html)).
 
 You should expect that latest revision of recipes can introduce breaking changes and new
@@ -325,7 +339,7 @@ The minimum solution involves small changes to your Conan client configuration b
 * **Pin the version of every reference you consume in your project** using either:
   * [recipe revision (RREV)](https://docs.conan.io/en/latest/versioning/revisions.html): `foo/1.0@#RREV` instead of `foo/1.0` in your conanfile.
   * [lockfiles](https://docs.conan.io/en/latest/versioning/lockfiles/introduction.html) (please, be aware there are some [knowns bugs](https://github.com/conan-io/conan/issues?q=is%3Aissue+lockfile) related to lockfiles that are not being fixed in Conan v1.x).
-   
+
 For larger projects and teams it is recommended to add some infrastructure to ensure stability by
 
  * **Cache recipes in your own Artifactory**: your project should use only this remote and
@@ -344,7 +358,7 @@ With version ranges the newest compatible package may yield a different package-
 
 - Build Reproducibility
 
-If consumers try to download and build the recipe at a later time, it may resolve to a different package version that may generate a different binary (that may or may not be compatible). In order to prevent these types of issues, we have decided to only allow exact requirements versions. This is a complicated issue, check [this thread](https://github.com/conan-io/conan-center-index/pull/9140#discussion_r795461547) for more. 
+If consumers try to download and build the recipe at a later time, it may resolve to a different package version that may generate a different binary (that may or may not be compatible). In order to prevent these types of issues, we have decided to only allow exact requirements versions. This is a complicated issue, check [this thread](https://github.com/conan-io/conan-center-index/pull/9140#discussion_r795461547) for more.
 
 ## How to consume a graph of shared libraries?
 
@@ -354,7 +368,7 @@ library that has just being generated has linked all its requirements as static 
 
 It is important to remark the default [package id mode](https://docs.conan.io/en/latest/creating_packages/define_abi_compatibility.html#versioning-schema)
 used by Conan (which is the same default used by ConanCenter): `semver_direct_mode`. With this default only the major
-version of the requirements is encoded in the package ID. 
+version of the requirements is encoded in the package ID.
 
 The two previous behaviors together can lead to unexpected results for a user that want to consume a graph of
 dependencies as shared libraries from ConanCenter. They might think that using `*:shared=True` in their profile is
@@ -372,6 +386,13 @@ Conan will build from sources all the packages and use the shared libraries when
 > [`shared_library_package_id`](https://docs.conan.io/en/latest/reference/conanfile/methods.html?highlight=shared_library_package_id#self-info-shared-library-package-id),
 > that will encode this information in the package ID and ensure that any change in the static libraries that are
 > embedded into a shared one is taken into account when computing the package ID.
-> 
+>
 > In this repository we are not using it, because it will lead to many missing packages, making it impossible
 > for the CI to actually build consumers in PRs.
+
+## How to watch only specific recipes?
+
+The [Code Owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) feature requires
+write permission for any listed user in the file `.github/CODEOWNERS`, which makes it impossible to be accepted by Conan. However, that file is still important as it can be re-used in
+a future Github Action to parse and communicate users. Meanwhile, there is the project https://app.github-file-watcher.com/, which is able to notify users, but only after
+merging to the master branch. Feel free to contribute to a new Github Action that implements a file watcher feature.

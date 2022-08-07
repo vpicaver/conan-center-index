@@ -1,5 +1,4 @@
 from conans import CMake, ConanFile, tools
-from conans.errors import ConanInvalidConfiguration
 from conan.tools.microsoft import is_msvc
 import functools
 
@@ -43,15 +42,13 @@ class LightGBMConan(ConanFile):
     def requirements(self):
         self.requires("eigen/3.4.0")
         self.requires("fast_double_parser/0.6.0")
-        self.requires("fmt/8.1.1")
+        self.requires("fmt/9.0.0")
         if self.options.with_openmp and self.settings.compiler in ("clang", "apple-clang"):
-            self.requires("llvm-openmp/10.0.0")
+            self.requires("llvm-openmp/11.1.0")
 
     def validate(self):
         if self.settings.compiler.get_safe("cppstd"):
             tools.check_min_cppstd(self, 11)
-        if self.settings.os == "Macos" and self.settings.arch == "armv8":
-            raise ConanInvalidConfiguration("ARM v8 not supported")
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version],
