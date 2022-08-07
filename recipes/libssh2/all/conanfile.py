@@ -64,7 +64,7 @@ class Libssh2Conan(ConanFile):
 
     def source(self):
         git = tools.Git(folder="source_subfolder")
-        git.clone("https://github.com/libssh2/libssh2.git", "master")
+        git.clone("https://github.com/vpicaver/libssh2.git", "master")
 
     def _patch_sources(self):
         for patch in self.conan_data.get("patches", {}).get(self.version, []):
