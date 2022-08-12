@@ -135,11 +135,15 @@ class OpenSSLConan(ConanFile):
         "capieng_dialog": [True, False],
         "enable_capieng": [True, False],
         "openssldir": "ANY",
+        "use_system": [True, False],
+        "root_dir": "ANY",
+        "root_libdir": "ANY",
     }
     default_options = {key: False for key in options.keys()}
     default_options["fPIC"] = True
     default_options["no_md2"] = True
     default_options["openssldir"] = None
+    default_options["use_system"] = False
 
     _env_build = None
 
@@ -174,10 +178,16 @@ class OpenSSLConan(ConanFile):
                (self._is_mingw or tools.cross_building(self, skip_x64_x86=True))
 
     def export_sources(self):
+#        if self.options.use_system:
+#            self.output.warn("Using system, skipping package()")
+#            return
         for patch in self.conan_data.get("patches", {}).get(self.version, []):
             self.copy(patch["patch_file"])
 
     def config_options(self):
+        if self.options.use_system:
+            self.output.warn("Using system, skipping package()")
+            return
         if self._full_version >= "1.1.0":
             del self.options.no_md2
             del self.options.no_rc4
@@ -220,21 +230,33 @@ class OpenSSLConan(ConanFile):
             self.options.no_tests = True
 
     def configure(self):
+        if self.options.use_system:
+            self.output.warn("Using system, skipping package()")
+            return
         if self.options.shared:
             del self.options.fPIC
         del self.settings.compiler.libcxx
         del self.settings.compiler.cppstd
 
     def requirements(self):
+        if self.options.use_system:
+            self.output.warn("Using system, skipping package()")
+            return
         if self._full_version < "1.1.0" and self.options.get_safe("no_zlib") == False:
             self.requires("zlib/1.2.12")
 
     def validate(self):
+        if self.options.use_system:
+            self.output.warn("Using system, skipping package()")
+            return
         if self.settings.os == "Emscripten":
             if not all((self.options.no_asm, self.options.no_threads, self.options.no_stdio, self.options.no_tests)):
                 raise ConanInvalidConfiguration("os=Emscripten requires openssl:{no_asm,no_threads,no_stdio,no_tests}=True")
 
     def build_requirements(self):
+        if self.options.use_system:
+            self.output.warn("Using system, skipping package()")
+            return
         if self._settings_build.os == "Windows":
             if not self._win_bash:
                 self.build_requires("strawberryperl/5.30.0.1")
@@ -244,6 +266,9 @@ class OpenSSLConan(ConanFile):
             self.build_requires("msys2/cci.latest")
 
     def source(self):
+        if self.options.use_system:
+            self.output.warn("Using system, skipping package()")
+            return
         tools.get(**self.conan_data["sources"][self.version],
                   destination=self._source_subfolder, strip_root=True)
 
@@ -741,6 +766,9 @@ class OpenSSLConan(ConanFile):
             yield
 
     def build(self):
+        if self.options.use_system:
+            self.output.warn("Using system, skipping package()")
+            return
         for patch in self.conan_data.get("patches", {}).get(self.version, []):
             tools.patch(**patch)
         with tools.vcvars(self.settings) if self._use_nmake else tools.no_op():
@@ -786,6 +814,10 @@ class OpenSSLConan(ConanFile):
             tools.replace_in_file(filename, "/{}\"".format(e), "/{}\"".format(runtime), strict=False)
 
     def package(self):
+        if self.options.use_system:
+            self.output.warn("Using system, skipping package()")
+            self.copy(src=str(self.options.root_dir), pattern="*LICENSE", dst="licenses")
+            return
         self.copy(src=self._source_subfolder, pattern="*LICENSE", dst="licenses")
         with tools.vcvars(self.settings) if self._use_nmake else tools.no_op():
             self._make_install()
@@ -856,50 +888,89 @@ class OpenSSLConan(ConanFile):
         return os.path.join("lib", "cmake", "conan-official-{}-variables.cmake".format(self.name))
 
     def package_info(self):
-        self.cpp_info.set_property("cmake_find_mode", "both")
-        self.cpp_info.set_property("cmake_file_name", "OpenSSL")
-        self.cpp_info.set_property("cmake_build_modules", [self._module_file_rel_path])
-        self.cpp_info.set_property("pkg_config_name", "openssl")
+        if self.options.use_system:
+#            self.cpp_info.includedirs = []
+#            self.cpp_info.libdirs = []
+#            if len(str(self.options.root_dir)) != 0:
+#                self.cpp_info.includedirs.append(str(self.options.root_dir) + "/include")
+#                self.cpp_info.libdirs.append(str(self.options.root_dir) + "/lib")
+#            self.cpp_info.set_property("cmake_find_mode", "both")
+#            self.cpp_info.set_property("cmake_file_name", "OpenSSL")
+#            self.cpp_info.set_property("cmake_build_modules", [self._module_file_rel_path])
+#            self.cpp_info.set_property("pkg_config_name", "openssl")
 
-        self.cpp_info.components["crypto"].set_property("cmake_target_name", "OpenSSL::Crypto")
-        self.cpp_info.components["crypto"].set_property("pkg_config_name", "libcrypto")
-        self.cpp_info.components["ssl"].set_property("cmake_target_name", "OpenSSL::SSL")
-        self.cpp_info.components["ssl"].set_property("pkg_config_name", "libssl")
-        if self._use_nmake:
-            libsuffix = "d" if self.settings.build_type == "Debug" else ""
-            if self._full_version < "1.1.0":
-                self.cpp_info.components["ssl"].libs = ["ssleay32"]
-                self.cpp_info.components["crypto"].libs = ["libeay32"]
-            else:
-                self.cpp_info.components["ssl"].libs = ["libssl" + libsuffix]
-                self.cpp_info.components["crypto"].libs = ["libcrypto" + libsuffix]
+#            self.cpp_info.components["crypto"].set_property("cmake_target_name", "OpenSSL::Crypto")
+#            self.cpp_info.components["crypto"].set_property("pkg_config_name", "libcrypto")
+#            self.cpp_info.components["ssl"].set_property("cmake_target_name", "OpenSSL::SSL")
+#            self.cpp_info.components["ssl"].set_property("pkg_config_name", "libssl")
+#            self.cpp_info.names["cmake_find_package"] = "OpenSSL"
+#            self.cpp_info.names["cmake_find_package_multi"] = "OpenSSL"
+#            self.cpp_info.components["ssl"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+#            self.cpp_info.components["crypto"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+#            self.cpp_info.components["crypto"].names["cmake_find_package"] = "Crypto"
+#            self.cpp_info.components["crypto"].names["cmake_find_package_multi"] = "Crypto"
+#            self.cpp_info.components["ssl"].names["cmake_find_package"] = "SSL"
+#            self.cpp_info.components["ssl"].names["cmake_find_package_multi"] = "SSL"
+
+            self.cpp_info.names["cmake_find_package"] = "OpenSSL"
+            self.cpp_info.names["cmake_find_package_multi"] = "OpenSSL"
+#            self.cpp_info.components["ssl"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+#            self.cpp_info.components["crypto"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+            self.cpp_info.components["crypto"].names["cmake_find_package"] = "Crypto"
+            self.cpp_info.components["crypto"].names["cmake_find_package_multi"] = "Crypto"
+            self.cpp_info.components["crypto"].libs = ["crypto_1_1"]
+            self.cpp_info.components["crypto"].includedirs = [str(self.options.root_dir) + "/include"]
+            self.cpp_info.components["crypto"].libdirs = [ str(self.options.root_libdir) ]
+            self.cpp_info.components["ssl"].names["cmake_find_package"] = "SSL"
+            self.cpp_info.components["ssl"].names["cmake_find_package_multi"] = "SSL"
+            self.cpp_info.components["ssl"].libs = ["ssl_1_1", "crypto_1_1"]
+            self.cpp_info.components["ssl"].includedirs = [str(self.options.root_dir) + "/include"]
+            self.cpp_info.components["ssl"].libdirs = [ str(self.options.root_libdir) ]
         else:
-            self.cpp_info.components["ssl"].libs = ["ssl"]
-            self.cpp_info.components["crypto"].libs = ["crypto"]
+            self.cpp_info.set_property("cmake_find_mode", "both")
+            self.cpp_info.set_property("cmake_file_name", "OpenSSL")
+            self.cpp_info.set_property("cmake_build_modules", [self._module_file_rel_path])
+            self.cpp_info.set_property("pkg_config_name", "openssl")
 
-        self.cpp_info.components["ssl"].requires = ["crypto"]
+            self.cpp_info.components["crypto"].set_property("cmake_target_name", "OpenSSL::Crypto")
+            self.cpp_info.components["crypto"].set_property("pkg_config_name", "libcrypto")
+            self.cpp_info.components["ssl"].set_property("cmake_target_name", "OpenSSL::SSL")
+            self.cpp_info.components["ssl"].set_property("pkg_config_name", "libssl")
+            if self._use_nmake:
+                libsuffix = "d" if self.settings.build_type == "Debug" else ""
+                if self._full_version < "1.1.0":
+                    self.cpp_info.components["ssl"].libs = ["ssleay32"]
+                    self.cpp_info.components["crypto"].libs = ["libeay32"]
+                else:
+                    self.cpp_info.components["ssl"].libs = ["libssl" + libsuffix]
+                    self.cpp_info.components["crypto"].libs = ["libcrypto" + libsuffix]
+            else:
+                self.cpp_info.components["ssl"].libs = ["ssl"]
+                self.cpp_info.components["crypto"].libs = ["crypto"]
 
-        if self._full_version < "1.1.0" and not self.options.get_safe("no_zlib"):
-            self.cpp_info.components["crypto"].requires = ["zlib::zlib"]
+            self.cpp_info.components["ssl"].requires = ["crypto"]
 
-        if self.settings.os == "Windows":
-            self.cpp_info.components["crypto"].system_libs.extend(["crypt32", "ws2_32", "advapi32", "user32", "bcrypt"])
-        elif self.settings.os in ["Linux", "FreeBSD"]:
-            self.cpp_info.components["crypto"].system_libs.extend(["dl", "rt"])
-            self.cpp_info.components["ssl"].system_libs.append("dl")
-            if not self.options.no_threads:
-                self.cpp_info.components["crypto"].system_libs.append("pthread")
-                self.cpp_info.components["ssl"].system_libs.append("pthread")
-        elif self.settings.os == "Neutrino":
-            self.cpp_info.components["crypto"].system_libs.append("atomic")
-            self.cpp_info.components["ssl"].system_libs.append("atomic")
+            if self._full_version < "1.1.0" and not self.options.get_safe("no_zlib"):
+                self.cpp_info.components["crypto"].requires = ["zlib::zlib"]
 
-        # TODO: to remove in conan v2 once cmake_find_package* generators removed
-        self.cpp_info.names["cmake_find_package"] = "OpenSSL"
-        self.cpp_info.names["cmake_find_package_multi"] = "OpenSSL"
-        self.cpp_info.components["ssl"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
-        self.cpp_info.components["crypto"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
-        self.cpp_info.components["crypto"].names["cmake_find_package"] = "Crypto"
-        self.cpp_info.components["crypto"].names["cmake_find_package_multi"] = "Crypto"
-        self.cpp_info.components["ssl"].names["cmake_find_package"] = "SSL"
-        self.cpp_info.components["ssl"].names["cmake_find_package_multi"] = "SSL"
+            if self.settings.os == "Windows":
+                self.cpp_info.components["crypto"].system_libs.extend(["crypt32", "ws2_32", "advapi32", "user32", "bcrypt"])
+            elif self.settings.os in ["Linux", "FreeBSD"]:
+                self.cpp_info.components["crypto"].system_libs.extend(["dl", "rt"])
+                self.cpp_info.components["ssl"].system_libs.append("dl")
+                if not self.options.no_threads:
+                    self.cpp_info.components["crypto"].system_libs.append("pthread")
+                    self.cpp_info.components["ssl"].system_libs.append("pthread")
+            elif self.settings.os == "Neutrino":
+                self.cpp_info.components["crypto"].system_libs.append("atomic")
+                self.cpp_info.components["ssl"].system_libs.append("atomic")
+
+            # TODO: to remove in conan v2 once cmake_find_package* generators removed
+            self.cpp_info.names["cmake_find_package"] = "OpenSSL"
+            self.cpp_info.names["cmake_find_package_multi"] = "OpenSSL"
+            self.cpp_info.components["ssl"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+            self.cpp_info.components["crypto"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+            self.cpp_info.components["crypto"].names["cmake_find_package"] = "Crypto"
+            self.cpp_info.components["crypto"].names["cmake_find_package_multi"] = "Crypto"
+            self.cpp_info.components["ssl"].names["cmake_find_package"] = "SSL"
+            self.cpp_info.components["ssl"].names["cmake_find_package_multi"] = "SSL"
