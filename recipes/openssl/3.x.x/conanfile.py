@@ -459,6 +459,8 @@ class OpenSSLConan(ConanFile):
         if self.settings.os in ["iOS", "tvOS", "watchOS"] and self.conf.get("tools.apple:enable_bitcode", check_type=bool):
             cflags.append("-fembed-bitcode")
             cxxflags.append("-fembed-bitcode")
+        if self.settings.os == "Android":
+            shared_extension = 'shared_extension => ".so",'
 
         config = config_template.format(
             targets=targets,
