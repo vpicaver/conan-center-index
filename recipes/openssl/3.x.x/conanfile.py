@@ -449,6 +449,11 @@ class OpenSSLConan(ConanFile):
         shared_cflag = ""
         shared_extension = ""
         shared_target = ""
+
+        if self.settings.os == "Android":
+            if self.options.shared:
+                shared_extension = 'shared_extension => ".so",'
+
         if self.settings.os == "Neutrino":
             if self.options.shared:
                 shared_extension = 'shared_extension => ".so.\$(SHLIB_VERSION_NUMBER)",'
